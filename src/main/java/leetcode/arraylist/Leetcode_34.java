@@ -2,120 +2,98 @@ package leetcode.arraylist;
 
 public class Leetcode_34 {
     /**
-     * 给你一个按照非递减顺序排列的整数数组 nums，和一个目标值 target。请你找出给定目标值在数组中的开始位置和结束位置。
-     * 如果数组中不存在目标值 target，返回 [-1, -1]。
-     * 你必须设计并实现时间复杂度为 O(log n) 的算法解决此问题。
+     * 题目：给定一个升序排列的整数数组 nums 和一个目标值 target，
+     * 找出目标值在数组中的起始位置和结束位置。如果数组中不存在目标值，返回 [-1, -1]。
+     * 要求时间复杂度 O(log n)，因此必须使用二分查找。
      *
-     * 方法一：先使用二分查找算法找到target的位置，再向左右分别移动指针
-     * @param nums
-     * @param target
-     * @return
+     * 思路：
+     * 1. 通过二分查找分别找到 target 的“左边界”和“右边界”。
+     * 2. 左边界：最后一个小于 target 的位置。
+     *    右边界：第一个大于 target 的位置。
+     * 3. 如果 rightBorder - leftBorder > 1，说明中间至少有一个 target 存在，
+     *    那么结果区间就是 [leftBorder+1, rightBorder-1]。
+     * 4. 否则，说明 target 不存在，返回 [-1, -1]。
+     *
+     * @param nums   升序排列的整数数组
+     * @param target 目标值
+     * @return 目标值的起始位置和结束位置
      */
-    public int[] searchRangeMethodOne(int[] nums, int target) {
-        int left = 0;
-        int right = nums.length - 1;
-        while (left <= right) {
-            int middle = (left + right) / 2;
-            if (nums[middle] > target) {
-                right = middle - 1;
-            } else if (nums[middle] < target) {
-                left = middle + 1;
-            } else {
-                int i = middle;
-                while (i >= 0) {
-                    if (nums[i] == target) {
-                        i--;
-                    } else {
-                        break;
-                    }
-                }
-                int j = middle;
-                while (j < nums.length) {
-                    if (nums[j] == target) {
-                        j++;
-                    } else {
-                        break;
-                    }
-                }
-                return new int[]{i + 1, j - 1};
-            }
-        }
-        return new int[]{-1, -1};
-    }
+    public int[] searchRange(int[] nums, int target) {
+        int left = searchLeftBorder(nums, target);   // 找到左边界
+        int right = searchRightBorder(nums, target); // 找到右边界
 
-    /**
-     * 方法二：使用两个二分查找分别查找左边界和右边界
-     * 重点：
-     *  1.要理解怎么找的左边界和右边界
-     *  2.找到左右边界之后，要判断是否存在目标值：
-     *      情况一：leftborder = -2 以及 rightborder = -2 说明数组中不存在目标值
-     *      情况二：必须满足 rightborder - leftBorder > 1 因为 [leftBorder,rightBorder] 区间内起码有一个值，且这个值为target
-     *      情况三：如果rightborder - leftBorder <= 1，说明[leftBorder,rightBorder] 区间内没有值，也就是没有target
-     * @param nums
-     * @param target
-     * @return
-     */
-    public int[] searchRangeMethodTwo(int[] nums, int target) {
-        // 获取 target 左边界（即第一个小于 target 的位置）
-        int leftBorder = searchLeftBorder(nums, target);
-        // 获取 target 右边界（即第一个大于 target 的位置）
-        int rightBorder = searchRightBorder(nums, target);
-        // 如果任一边界没有更新，说明 target 根本不存在于数组中
-        if (leftBorder == -2 || rightBorder == -2) {
+        // 如果任意一边为 -2，说明二分查找过程中边界值没有被更新，target 根本不在数组中
+        if (left == -2 || right == -2) {
             return new int[]{-1, -1};
         }
-        //判断 rightBorder - leftBorder > 1	表示 target 至少存在一次也就是说数组区间内有target
-        if (rightBorder - leftBorder > 1) {
-            return new int[]{leftBorder + 1, rightBorder - 1};
+
+        // 如果右边界和左边界之间至少有一个元素（说明 target 存在）
+        if (right - left >= 1) {
+            // 返回 target 的起始位置和结束位置
+            // 注意：真实区间是 (left, right) —— 即去掉边界本身
+            return new int[]{left + 1, right - 1};
         }
+
         // 否则 target 不存在
         return new int[]{-1, -1};
     }
 
     /**
-     * 查找右边界（第一个大于 target 的下标）
-     * 例如 nums = [1,2,3,3,3,4], target = 3
-     * 返回的是下标 5（即 nums[5] = 4 > 3）
+     * 查找 target 的右边界（第一个大于 target 的位置）
+     *
+     * 例如 nums = [5,7,7,8,8,10], target = 8
+     * 右边界应该返回下标 5（nums[5]=10，是第一个大于 8 的元素）
+     *
+     * 如果 target 大于所有元素，最终返回 nums.length
+     *
+     * @param nums   升序数组
+     * @param target 目标值
+     * @return 右边界下标（若未找到则返回 -2，表示无效）
      */
     private int searchRightBorder(int[] nums, int target) {
         int left = 0;
         int right = nums.length - 1;
-        int rightBorder = -2; // 初始值为 -2，标记未找到
+        int rightBorder = -2; // 初始值为 -2，用来区分“从未更新过”的情况
 
         while (left <= right) {
-            int middle = (left + right) / 2;
+            int middle = (left + right) / 2; // 取中间位置
             if (nums[middle] <= target) {
-                // 当前值小于等于 target，说明目标右边界还在右边
+                // 如果 nums[middle] <= target，说明右边界在右侧
                 left = middle + 1;
-                rightBorder = left; // 更新 rightBorder 为“第一个大于 target 的位置”
+                rightBorder = left; // 更新右边界为 left
             } else {
-                // 当前值大于 target，继续在左半边找
+                // 如果 nums[middle] > target，右边界在左侧
                 right = middle - 1;
             }
         }
-
         return rightBorder;
     }
 
     /**
-     * 查找左边界（最后一个小于 target 的下标）
-     * 例如 nums = [1,2,3,3,3,4], target = 3
-     * 返回的是下标 1（即 nums[1] = 2 < 3）
+     * 查找 target 的左边界（最后一个小于 target 的位置）
+     *
+     * 例如 nums = [5,7,7,8,8,10], target = 8
+     * 左边界应该返回下标 2（nums[2]=7，是最后一个小于 8 的元素）
+     *
+     * 如果 target 小于所有元素，最终返回 -1
+     *
+     * @param nums   升序数组
+     * @param target 目标值
+     * @return 左边界下标（若未找到则返回 -2，表示无效）
      */
     private int searchLeftBorder(int[] nums, int target) {
         int left = 0;
         int right = nums.length - 1;
-        int leftBorder = -2; // 初始值为 -2，标记未找到
+        int leftBorder = -2; // 初始值为 -2，用来区分“从未更新过”的情况
 
         while (left <= right) {
-            int middle = (left + right) / 2;
-            //当nums[middle]大于target，更新(缩小)右边界
-            //当nums[middle]等于target，不停止，继续更新(缩小)右边界，所以才能找到左边界
+            int middle = (left + right) / 2; // 取中间位置
             if (nums[middle] >= target) {
+                // 如果 nums[middle] >= target，说明左边界在左侧
                 right = middle - 1;
-                leftBorder = right; // 更新 leftBorder 为“最后一个小于 target 的位置”
+                leftBorder = right; // 更新左边界为 right
             } else {
-                // 当前值小于 target，继续在右半边找
+                // 如果 nums[middle] < target，左边界在右侧
                 left = middle + 1;
             }
         }
