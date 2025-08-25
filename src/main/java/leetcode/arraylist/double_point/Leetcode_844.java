@@ -1,4 +1,4 @@
-package leetcode.arraylist.slow_fast_point;
+package leetcode.arraylist.double_point;
 
 public class Leetcode_844 {
     /**
