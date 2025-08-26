@@ -1,4 +1,4 @@
-package leetcode.arraylist;
+package leetcode.arraylist.rotated_matrix;
 
 public class Leetcode_59 {
     /**
